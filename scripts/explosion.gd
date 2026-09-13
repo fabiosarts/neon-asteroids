@@ -8,11 +8,13 @@ var scale_mult := 1.0
 var _t := 0.0
 var _flash: MeshInstance3D = null
 var _flash_mat: StandardMaterial3D = null
+var _explosion_snd: AudioStreamPlayer = null
 
 
 func _ready() -> void:
 	_build_particles()
 	_build_flash()
+	_build_audio()
 
 
 func _build_particles() -> void:
@@ -57,6 +59,13 @@ func _build_flash() -> void:
 	_flash.material_override = _flash_mat
 	add_child(_flash)
 
+func _build_audio() -> void:
+	_explosion_snd = AudioStreamPlayer.new()
+	_explosion_snd.stream = AudioStreamWAV.load_from_file("res://sounds/explosion1.wav")
+	_explosion_snd.autoplay = true
+	_explosion_snd.volume_linear = 0.3
+	_explosion_snd.pitch_scale = randf_range(0.9, 1.1)
+	add_child(_explosion_snd)
 
 func _process(delta: float) -> void:
 	_t += delta

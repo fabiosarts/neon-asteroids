@@ -5,9 +5,9 @@ extends Node3D
 signal fired(pos: Vector3, dir: Vector3, vel: Vector3)
 
 const ROT_SPEED := 3.6
-const THRUST := 200.0
-const MAX_SPEED := 150.0
-const BULLET_SPEED := 430.0
+const THRUST := 50.0
+const MAX_SPEED := 100.0
+const BULLET_SPEED := 215.0
 const FIRE_COOLDOWN := 0.18
 
 var heading := 0.0  # radians in XZ plane; 0 = +X
@@ -18,11 +18,11 @@ var game: Node = null  # set by main
 
 var _cooldown := 0.0
 var _flame: MeshInstance3D = null
-
+var _thrust_snd: AudioStreamPlayer = null
 
 func _ready() -> void:
 	_build_visuals()
-
+	_build_audio()
 
 func reset(pos: Vector3, ang: float) -> void:
 	position = pos
@@ -52,12 +52,12 @@ func _physics_process(delta: float) -> void:
 		want_thrust = d[1]
 		want_fire = _autopilot_fire()
 	else:
-		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
-			want_rot += 1.0
-		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
+		if Input.is_action_pressed("izquierda"):
 			want_rot -= 1.0
-		want_thrust = Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP)
-		want_fire = Input.is_key_pressed(KEY_SPACE)
+		if Input.is_action_pressed("derecha"):
+			want_rot += 1.0
+		want_thrust = Input.is_action_pressed("adelante")
+		want_fire = Input.is_action_pressed("disparar")
 
 	heading += want_rot * ROT_SPEED * delta
 	velocity += heading_dir() * THRUST * delta * (1.0 if want_thrust else 0.0)
@@ -77,7 +77,11 @@ func _physics_process(delta: float) -> void:
 		_cooldown = FIRE_COOLDOWN
 		var dir := heading_dir()
 		fired.emit(position + dir * 3.6, dir, velocity + dir * BULLET_SPEED)
-
+		
+	if want_thrust and not _thrust_snd.playing:
+		_thrust_snd.play()
+	else: if not want_thrust and _thrust_snd.playing:
+		_thrust_snd.stop()
 
 func _autopilot() -> Array:
 	var target_ang := heading
@@ -162,3 +166,17 @@ func _build_visuals() -> void:
 	_flame.position = Vector3(-3.6, 0.0, 0.0)
 	_flame.visible = false
 	add_child(_flame)
+	
+func _build_audio() -> void:
+	_thrust_snd = AudioStreamPlayer.new()
+	var wavefile = AudioStreamWAV.load_from_file("res://sounds/trust.wav")
+	wavefile.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wavefile.loop_begin = 0
+	wavefile.loop_end = wavefile.get_length() * wavefile.mix_rate
+	
+	_thrust_snd.stream = wavefile
+	_thrust_snd.pitch_scale = 1.0
+	add_child(_thrust_snd)
+	
+func stop_sound() -> void:
+	_thrust_snd.stop()

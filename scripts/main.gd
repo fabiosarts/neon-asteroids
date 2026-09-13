@@ -31,6 +31,8 @@ var _lives_label: Label = null
 var _msg_label: Label = null
 var _sub_label: Label = null
 
+var _fire_snd: AudioStreamPlayer = null
+
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -47,12 +49,23 @@ func _ready() -> void:
 	ship.reset(Vector3.ZERO, -PI / 2.0)
 	ship.alive = false
 	ship.autopilot = _auto
+	_build_audio()
 
 	_update_hud()
 	_set_message("NEÓN ASTEROIDES", "WASD / FLECHAS — MOVER   ·   ESPACIO — DISPARAR   ·   F12 — CAPTURA", 0.0)
 	if _auto:
 		_start_game()
 
+func _build_audio() -> void:
+	_fire_snd = AudioStreamPlayer.new()
+	_fire_snd.volume_linear = 0.2
+	_fire_snd.stream = AudioStreamWAV.load_from_file("res://sounds/laserShoot.wav")
+	add_child(_fire_snd)
+
+func _play_fire_snd() -> void:
+	_fire_snd.stop()
+	_fire_snd.pitch_scale = randf_range(0.95, 1.1)
+	_fire_snd.play()
 
 func _physics_process(delta: float) -> void:
 	_t += delta
@@ -60,7 +73,7 @@ func _physics_process(delta: float) -> void:
 
 	match state:
 		State.TITLE:
-			if Input.is_key_pressed(KEY_ENTER):
+			if Input.is_action_pressed("iniciar"):
 				_start_game()
 		State.PLAY:
 			_check_collisions()
@@ -79,7 +92,7 @@ func _physics_process(delta: float) -> void:
 					state = State.GAMEOVER
 					_set_message("FIN DE LA PARTIDA", "PUNTOS %06d   ·   PULSA ENTER" % score, 9999.0)
 		State.GAMEOVER:
-			if Input.is_key_pressed(KEY_ENTER):
+			if Input.is_action_pressed("iniciar"):
 				_start_game()
 
 	if _msg_hold > 0.0:
@@ -167,7 +180,7 @@ func _destroy_rock(r: Rock, by_bullet: bool) -> void:
 		for k in 2:
 			var dir := Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)).normalized()
 			var speed := randf_range(G.ROCK_SPEEDS[child_idx][0], G.ROCK_SPEEDS[child_idx][1])
-			var child := _spawn_rock(child_idx, pos, r.vel * 0.4 + dir * speed)
+			var child := _spawn_rock(child_idx, pos, r.vel * 0.1 + dir * speed)
 			rocks.append(child)
 	rocks.erase(r)
 	r.queue_free()
@@ -176,6 +189,7 @@ func _destroy_rock(r: Rock, by_bullet: bool) -> void:
 func _kill_ship() -> void:
 	ship.alive = false
 	ship.visible = false
+	ship.stop_sound()
 	lives -= 1
 	var ex := Explosion.new()
 	ex.color = G.SHIP_COLOR
@@ -243,6 +257,7 @@ func _on_ship_fired(pos: Vector3, dir: Vector3, vel: Vector3) -> void:
 	add_child(b)
 	b.launch(pos, dir, vel)
 	bullets.append(b)
+	_play_fire_snd()
 
 
 # ------------------------------------------------------------- hud

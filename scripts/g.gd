@@ -7,9 +7,9 @@ const SHIP_RADIUS := 2.2
 # 0 = big, 1 = medium, 2 = small
 const ROCK_RADII := [6.5, 3.8, 2.0]
 const ROCK_SPEEDS := [
-	[18.0, 38.0],
-	[30.0, 60.0],
-	[55.0, 95.0],
+	[18.0, 22.0],
+	[30.0, 35.0],
+	[40.0, 50.0],
 ]
 const ROCK_COLORS := [
 	Color(0.30, 1.0, 0.53),
